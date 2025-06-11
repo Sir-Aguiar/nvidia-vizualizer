@@ -1,0 +1,1008 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard de Performance - Análise CSV</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      min-height: 100vh;
+      height: 100%;
+      padding: 20px;
+      overflow-x: hidden;
+      overflow-y: auto;
+    }
+
+    .container {
+      height: 100%;
+      max-width: 1400px;
+      margin: 0 auto;
+      border-radius: 20px;
+      overflow: hidden;
+    }
+
+    .header {
+      background: #222;
+      color: white;
+      padding: 30px;
+      text-align: center;
+      border-radius: 12px;
+    }
+
+    .header h1 {
+      font-size: 2.5rem;
+      margin-bottom: 10px;
+      font-weight: 300;
+    }
+
+    .header p {
+      font-size: 1.1rem;
+      opacity: 0.9;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+      padding: 30px;
+    }
+
+    .stat-card {
+      background: white;
+      padding: 25px;
+      border-radius: 15px;
+      box-shadow: 0 5px 8px rgba(0, 0, 0, 0.08);
+      text-align: center;
+      transition: transform 0.3s ease;
+    }
+
+    .stat-card:hover {
+      transform: translateY(-5px);
+    }
+
+    .stat-card h3 {
+      color: #2c3e50;
+      font-size: 2rem;
+      margin-bottom: 5px;
+    }
+
+    .stat-card p {
+      color: #7f8c8d;
+      font-size: 0.9rem;
+    }
+
+    .charts-section {
+      padding: 30px;
+    }
+
+    .charts-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+      gap: 30px;
+    }
+
+    .chart-container {
+      background: white;
+      padding: 25px;
+      border-radius: 15px;
+      box-shadow: 0 5px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    .chart-title {
+      font-size: 1.3rem;
+      color: #2c3e50;
+      margin-bottom: 20px;
+      text-align: center;
+      font-weight: 600;
+    }
+
+    .table-section {
+      padding: 30px;
+    }
+
+    .data-table {
+      width: 100%;
+      background: white;
+      border-radius: 15px;
+      overflow: hidden;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
+    }
+
+    .data-table table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .data-table th {
+      background: #2c3e50;
+      color: white;
+      padding: 15px;
+      text-align: left;
+      font-weight: 600;
+    }
+
+    .data-table td {
+      padding: 12px 15px;
+      border-bottom: 1px solid #ecf0f1;
+    }
+
+    .data-table tr:hover {
+      background: #f8f9fa;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 50px;
+      color: #7f8c8d;
+    }
+
+    /* Estilos para a tela de instruções */
+    .instructions-section {
+      height: 100%;
+      padding: 30px;
+      background: #f8f9fa;
+    }
+
+    .instructions-content {
+      background: white;
+      padding: 40px;
+      border-radius: 15px;
+      box-shadow: 0 5px 8px rgba(0, 0, 0, 0.08);
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+
+    .instructions-title {
+      font-size: 2rem;
+      color: #2c3e50;
+      margin-bottom: 30px;
+      text-align: center;
+      font-weight: 600;
+    }
+
+    .instruction-section {
+      margin-bottom: 35px;
+    }
+
+    .instruction-section h3 {
+      color: #2c3e50;
+      font-size: 1.3rem;
+      margin-bottom: 15px;
+      font-weight: 600;
+      border-left: 4px solid #3498db;
+      padding-left: 15px;
+    }
+
+    .instruction-section p {
+      color: #34495e;
+      line-height: 1.6;
+      margin-bottom: 15px;
+    }
+
+    .instruction-section ol,
+    .instruction-section ul {
+      color: #34495e;
+      margin-left: 20px;
+      margin-bottom: 15px;
+    }
+
+    .instruction-section li {
+      margin-bottom: 8px;
+      line-height: 1.5;
+    }
+
+    .csv-format-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+      background: #f8f9fa;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .csv-format-table th {
+      background: #2c3e50;
+      color: white;
+      padding: 12px;
+      text-align: left;
+      font-weight: 600;
+    }
+
+    .csv-format-table td {
+      padding: 10px 12px;
+      border-bottom: 1px solid #ecf0f1;
+    }
+
+    .csv-format-table tr:hover {
+      background: #e8f5e8;
+    }
+
+    .code-block {
+      background: #2c3e50;
+      color: #ecf0f1;
+      padding: 15px;
+      border-radius: 8px;
+      font-family: 'Courier New', monospace;
+      font-size: 0.9rem;
+      margin: 15px 0;
+      overflow-x: auto;
+    }
+
+    .highlight {
+      background: #fff3cd;
+      padding: 15px;
+      border-radius: 8px;
+      border-left: 4px solid #ffc107;
+      margin: 15px 0;
+    }
+
+    .highlight strong {
+      color: #856404;
+    }
+
+    /* Estilos para navegação */
+    .navigation-section {
+      padding: 20px 30px;
+      text-align: center;
+      background: white;
+      border-radius: 12px;
+      margin-bottom: 20px;
+    }
+
+    .nav-button {
+      background: linear-gradient(135deg, #3498db, #2980b9);
+      color: white;
+      border: none;
+      padding: 12px 25px;
+      border-radius: 25px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      margin: 0 10px;
+    }
+
+    .nav-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(52, 152, 219, 0.3);
+    }
+
+    .nav-button.secondary {
+      background: linear-gradient(135deg, #95a5a6, #7f8c8d);
+    }
+
+    .nav-button.secondary:hover {
+      box-shadow: 0 5px 15px rgba(149, 165, 166, 0.3);
+    }
+
+    .upload-section {
+      height: 100%;
+      padding: 30px;
+      text-align: center;
+      background: #f8f9fa;
+    }
+
+    .upload-area {
+      border: 3px dashed #3498db;
+      border-radius: 15px;
+      padding: 50px 30px;
+      background: white;
+      transition: all 0.3s ease;
+      cursor: pointer;
+      margin-bottom: 20px;
+    }
+
+    .upload-area:hover {
+      border-color: #2980b9;
+      background: #f8f9fa;
+    }
+
+    .upload-area.dragover {
+      border-color: #27ae60;
+      background: #e8f5e8;
+    }
+
+    .upload-icon {
+      font-size: 3rem;
+      color: #3498db;
+      margin-bottom: 15px;
+    }
+
+    .upload-text {
+      font-size: 1.2rem;
+      color: #2c3e50;
+      margin-bottom: 10px;
+    }
+
+    .upload-hint {
+      color: #7f8c8d;
+      font-size: 0.9rem;
+    }
+
+    .file-input {
+      display: none;
+    }
+
+    .upload-button {
+      background: linear-gradient(135deg, #3498db, #2980b9);
+      color: white;
+      border: none;
+      padding: 12px 30px;
+      border-radius: 25px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: transform 0.3s ease;
+      margin-top: 15px;
+    }
+
+    .upload-button:hover {
+      transform: translateY(-2px);
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 4px;
+      background: #ecf0f1;
+      border-radius: 2px;
+      overflow: hidden;
+      margin-top: 20px;
+      display: none;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #3498db, #27ae60);
+      transition: width 0.3s ease;
+    }
+
+    .footer {
+      background: #2c3e50;
+      color: white;
+      text-align: center;
+      padding: 20px 30px;
+      margin-top: 30px;
+      border-radius: 12px;
+    }
+
+    .footer p {
+      margin: 5px 0;
+      opacity: 0.9;
+    }
+
+    .footer .author {
+      font-weight: 600;
+      color: #3498db;
+    }
+
+    .footer .year {
+      opacity: 0.7;
+      font-size: 0.9rem;
+    }
+
+    @media (max-width: 768px) {
+      .charts-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .header h1 {
+        font-size: 2rem;
+      }
+
+      body {
+        padding: 10px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Dashboard de Performance</h1>
+      <p>Análise de Dados de FPS, CPU e GPU</p>
+    </div>
+
+    <div class="navigation-section">
+      <button class="nav-button" id="uploadBtn" onclick="showUploadSection()">
+        📊 Upload de Arquivo
+      </button>
+      <button class="nav-button secondary" id="instructionsBtn" onclick="showInstructionsSection()">
+        📖 Instruções
+      </button>
+    </div>
+
+    <div id="instructionsSection" class="instructions-section" style="display: none;">
+      <div class="instructions-content">
+        <h2 class="instructions-title">📋 Como Gerar e Usar Arquivos CSV de Performance</h2>
+
+        <div class="instruction-section">
+          <h3>🎯 O que é necessário</h3>
+          <p>Esta ferramenta analisa dados de performance de jogos capturados através do <strong>NVIDIA GeForce
+              Experience</strong> ou <strong>MSI Afterburner</strong>. Os dados devem estar em formato CSV com métricas
+            específicas de FPS, CPU e GPU.</p>
+        </div>
+
+        <div class="instruction-section">
+          <h3>🚀 Como gerar o arquivo CSV com NVIDIA GeForce Experience</h3>
+          <ol>
+            <li>Abra o <strong>NVIDIA GeForce Experience</strong></li>
+            <li>Vá em <strong>Configurações</strong> > <strong>Geral</strong></li>
+            <li>Ative <strong>"Sobreposição no jogo"</strong></li>
+            <li>Pressione <strong>Alt + Z</strong> durante o jogo</li>
+            <li>Clique em <strong>"Performance"</strong> > <strong>"Métricas avançadas"</strong></li>
+            <li>Ative as métricas: <strong>FPS, CPU Usage, GPU Usage</strong> ou <strong>Exibição de Estatísticas: Avançadas</strong></li>
+            <li>Inicie a gravação das métricas</li>
+            <li>Jogue por alguns minutos para coletar dados</li>
+            <li>Pare a gravação e exporte os dados como <strong>CSV</strong></li>
+          </ol>
+        </div>
+
+        <div class="instruction-section">
+          <h3>⚙️ Como gerar com MSI Afterburner + RivaTuner</h3>
+          <ol>
+            <li>Instale o <strong>MSI Afterburner</strong> e <strong>RivaTuner Statistics Server</strong></li>
+            <li>Configure o MSI Afterburner para monitorar:
+              <ul>
+                <li>Framerate (FPS)</li>
+                <li>CPU Usage (%)</li>
+                <li>GPU Usage (%)</li>
+                <li>GPU2 Usage (%) - se aplicável</li>
+              </ul>
+            </li>
+            <li>Ative o <strong>logging</strong> nas configurações</li>
+            <li>Escolha salvar em formato <strong>CSV</strong></li>
+            <li>Inicie o jogo e deixe o logging ativo</li>
+            <li>Após a sessão, pare o logging</li>
+          </ol>
+        </div>
+
+        <div class="instruction-section">
+          <h3>📊 Formato do arquivo CSV esperado</h3>
+          <p>O arquivo CSV deve conter as seguintes colunas (a ordem pode variar):</p>
+
+          <table class="csv-format-table">
+            <thead>
+              <tr>
+                <th>Nome da Coluna</th>
+                <th>Descrição</th>
+                <th>Tipo de Dado</th>
+                <th>Exemplo</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>FPS</strong></td>
+                <td>Frames por segundo</td>
+                <td>Número decimal</td>
+                <td>75.5</td>
+              </tr>
+              <tr>
+                <td><strong>FPS 1(%) Low</strong></td>
+                <td>1% dos menores valores de FPS</td>
+                <td>Número decimal</td>
+                <td>45.2</td>
+              </tr>
+              <tr>
+                <td><strong>CPU Utilization(%)</strong></td>
+                <td>Uso do processador em porcentagem</td>
+                <td>Número decimal</td>
+                <td>68.3</td>
+              </tr>
+              <tr>
+                <td><strong>GPU1 Utilization(%)</strong></td>
+                <td>Uso da placa de vídeo principal</td>
+                <td>Número decimal</td>
+                <td>95.7</td>
+              </tr>
+              <tr>
+                <td><strong>GPU2 Utilization(%)</strong></td>
+                <td>Uso da segunda GPU (opcional)</td>
+                <td>Número decimal</td>
+                <td>87.1</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="instruction-section">
+          <h3>💡 Exemplo de arquivo CSV</h3>
+          <div class="code-block">
+            FPS,FPS 1(%) Low,CPU Utilization(%),GPU1 Utilization(%),GPU2 Utilization(%)
+            75.5,45.2,68.3,95.7,87.1
+            73.2,44.8,70.1,97.2,85.3
+            76.8,46.1,66.7,94.5,88.9
+            ...
+          </div>
+        </div>
+
+        <div class="highlight">
+          <strong>💡 Dica:</strong> Certifique-se de que o arquivo não contém linhas vazias no final e que os números
+          usam ponto (.) como separador decimal, não vírgula (,).
+        </div>
+
+        <div class="instruction-section">
+          <h3>🔧 Solução de problemas comuns</h3>
+          <ul>
+            <li><strong>Erro "Arquivo CSV vazio":</strong> Verifique se o arquivo contém dados e cabeçalhos</li>
+            <li><strong>Dados não aparecem nos gráficos:</strong> Confirme se os nomes das colunas estão corretos</li>
+            <li><strong>Valores estranhos:</strong> Verifique se os números usam ponto como separador decimal</li>
+            <li><strong>Arquivo muito grande:</strong> A ferramenta mostra apenas os primeiros 100 pontos nos gráficos
+              para melhor performance</li>
+          </ul>
+        </div>
+
+        <div class="instruction-section">
+          <h3>📈 O que você verá no dashboard</h3>
+          <ul>
+            <li><strong>Estatísticas resumidas:</strong> Total de registros, médias de FPS, CPU e GPU</li>
+            <li><strong>Gráficos interativos:</strong> Evolução temporal do FPS e utilização dos componentes</li>
+            <li><strong>Tabela detalhada:</strong> Estatísticas completas (máximo, mínimo, média, mediana) para todas as
+              métricas</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div id="uploadSection" class="upload-section">
+      <div class="upload-area" id="uploadArea">
+        <div class="upload-icon">📊</div>
+        <div class="upload-text">Arraste seu arquivo CSV aqui</div>
+        <div class="upload-hint">ou clique para selecionar o arquivo</div>
+        <button class="upload-button" id="uploadButton">
+          Escolher Arquivo
+        </button>
+      </div>
+      <input type="file" id="fileInput" class="file-input" accept=".csv" />
+      <div class="progress-bar" id="progressBar">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+    </div>
+
+    <div id="content" style="display: none;">
+    </div>
+
+    <div class="footer">
+      <p>Desenvolvido por <a class="author" href="http://github.com/Sir-Aguiar">Felipe Aguiar</a></p>
+      <p id="year"></p>
+    </div>
+  </div>
+
+  <script>
+    class CSVProcessor {
+      constructor() {
+        this.data = [];
+        this.headers = [];
+      }
+
+      parseCSVLine(line) {
+        const result = [];
+        let current = '';
+        let inQuotes = false;
+
+        for (let i = 0; i < line.length; i++) {
+          const char = line[i];
+
+          if (char === '"') {
+            inQuotes = !inQuotes;
+          } else if (char === ',' && !inQuotes) {
+            result.push(current.trim().replace(/^"|"$/g, ''));
+            current = '';
+          } else {
+            current += char;
+          }
+        }
+
+        result.push(current.trim().replace(/^"|"$/g, ''));
+        return result;
+      }
+
+      processCSV(csvContent) {
+        const lines = csvContent.split('\n').map(line => line.trim()).filter(line => line.length > 0);
+
+        if (lines.length === 0) {
+          throw new Error('Arquivo CSV vazio');
+        }
+
+        this.headers = this.parseCSVLine(lines[0]);
+        this.data = [];
+
+        for (let i = 1; i < lines.length; i++) {
+          const values = this.parseCSVLine(lines[i]);
+          if (values.length >= this.headers.length - 1) {
+            const row = {};
+            this.headers.forEach((header, index) => {
+              row[header] = values[index] || '';
+            });
+            this.data.push(row);
+          }
+        }
+
+        return this.generateAnalysisData();
+      }
+
+      getNumericStats(columnName) {
+        const values = this.data
+          .map(row => {
+            const val = row[columnName];
+            if (val === '' || val === undefined || val === null) return NaN;
+            return parseFloat(val.toString().replace(/[^\d.-]/g, ''));
+          })
+          .filter(val => !isNaN(val) && isFinite(val));
+
+        if (values.length === 0) return null;
+
+        values.sort((a, b) => a - b);
+
+        return {
+          count: values.length,
+          min: Math.min(...values),
+          max: Math.max(...values),
+          media: values.reduce((a, b) => a + b, 0) / values.length,
+          mediana: values.length % 2 === 0
+            ? (values[values.length / 2 - 1] + values[values.length / 2]) / 2
+            : values[Math.floor(values.length / 2)]
+        };
+      }
+
+      generateAnalysisData() {
+        const analysisData = {
+          basicInfo: {
+            totalLinhas: this.data.length,
+            totalColunas: this.headers.length,
+            colunas: this.headers
+          },
+          statistics: {},
+          chartData: {
+            fps: [],
+            fps1Low: [],
+            cpuUsage: [],
+            gpu1Usage: [],
+            gpu2Usage: [],
+            timestamps: []
+          }
+        };
+
+        // Estatísticas por coluna
+        this.headers.forEach(header => {
+          if (!header || header.trim() === '') return;
+          const numStats = this.getNumericStats(header);
+          if (numStats) {
+            analysisData.statistics[header] = numStats;
+          }
+        });
+
+        // Dados para gráficos
+        this.data.forEach((row, index) => {
+          analysisData.chartData.timestamps.push(index);
+          analysisData.chartData.fps.push(parseFloat(row['FPS']) || 0);
+          analysisData.chartData.fps1Low.push(parseFloat(row['FPS 1(%) Low']) || 0);
+          analysisData.chartData.cpuUsage.push(parseFloat(row['CPU Utilization(%)']) || 0);
+          analysisData.chartData.gpu1Usage.push(parseFloat(row['GPU1 Utilization(%)']) || 0);
+          analysisData.chartData.gpu2Usage.push(parseFloat(row['GPU2 Utilization(%)']) || 0);
+        });
+
+        return analysisData;
+      }
+    }
+
+    // Setup upload functionality
+    function setupUpload() {
+      const uploadArea = document.getElementById('uploadArea');
+      const uploadButton = document.getElementById('uploadButton');
+      const fileInput = document.getElementById('fileInput');
+      const progressBar = document.getElementById('progressBar');
+      const progressFill = document.getElementById('progressFill');
+
+      // Drag and drop events
+      uploadArea.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        uploadArea.classList.add('dragover');
+      });
+
+      uploadArea.addEventListener('dragleave', () => {
+        uploadArea.classList.remove('dragover');
+      });
+
+      uploadArea.addEventListener('drop', (e) => {
+        e.preventDefault();
+        uploadArea.classList.remove('dragover');
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+          handleFile(files[0]);
+        }
+      });
+
+      // Click events - apenas no botão, não na área toda
+      uploadButton.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        fileInput.click();
+      });
+
+      // Área de upload clique apenas quando não for no botão
+      uploadArea.addEventListener('click', (e) => {
+        if (e.target !== uploadButton) {
+          fileInput.click();
+        }
+      });
+
+      fileInput.addEventListener('change', (e) => {
+        if (e.target.files.length > 0) {
+          handleFile(e.target.files[0]);
+          // Reset file input para permitir re-upload do mesmo arquivo
+          e.target.value = '';
+        }
+      });
+    }
+
+    function handleFile(file) {
+      if (!file.name.toLowerCase().endsWith('.csv')) {
+        alert('Por favor, selecione um arquivo CSV válido.');
+        return;
+      }
+
+      const progressBar = document.getElementById('progressBar');
+      const progressFill = document.getElementById('progressFill');
+
+      // Reset progress bar
+      progressBar.style.display = 'block';
+      progressFill.style.width = '0%';
+
+      const reader = new FileReader();
+
+      reader.onprogress = (e) => {
+        if (e.lengthComputable) {
+          const percentLoaded = Math.round((e.loaded / e.total) * 100);
+          progressFill.style.width = percentLoaded + '%';
+        }
+      };
+
+      reader.onload = (e) => {
+        try {
+          progressFill.style.width = '100%';
+
+          setTimeout(() => {
+            const processor = new CSVProcessor();
+            const data = processor.processCSV(e.target.result);
+
+            document.getElementById('uploadSection').style.display = 'none';
+            document.getElementById('instructionsSection').style.display = 'none';
+            document.getElementById('content').style.display = 'block';
+
+            renderDashboard(data);
+
+          }, 500);
+
+        } catch (error) {
+          console.error('Erro ao processar arquivo:', error);
+          alert('Erro ao processar arquivo: ' + error.message);
+          progressBar.style.display = 'none';
+        }
+      };
+
+      reader.onerror = () => {
+        alert('Erro ao ler o arquivo.');
+        progressBar.style.display = 'none';
+      };
+
+      reader.readAsText(file);
+    }
+
+    function renderDashboard(data) {
+      const content = document.getElementById('content');
+
+      content.innerHTML = `
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <h3>${data.basicInfo.totalLinhas}</h3>
+                        <p>Total de Registros</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>${data.statistics['FPS']?.media?.toFixed(1) || 'N/A'}</h3>
+                        <p>FPS Médio</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>${data.statistics['CPU Utilization(%)']?.media?.toFixed(1) || 'N/A'}%</h3>
+                        <p>CPU Médio</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>${data.statistics['GPU1 Utilization(%)']?.media?.toFixed(1) || 'N/A'}%</h3>
+                        <p>GPU1 Médio</p>
+                    </div>
+                </div>
+
+                <div class="charts-section">
+                    <div class="charts-grid">
+                        <div class="chart-container">
+                            <div class="chart-title">Performance de FPS</div>
+                            <canvas id="fpsChart"></canvas>
+                        </div>
+                        <div class="chart-container">
+                            <div class="chart-title">Utilização de CPU e GPU</div>
+                            <canvas id="usageChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="table-section">
+                    <div class="chart-title">Estatísticas Detalhadas</div>
+                    <div class="data-table">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Métrica</th>
+                                    <th>Máximo</th>
+                                    <th>Mínimo</th>
+                                    <th>Média</th>
+                                    <th>Mediana</th>
+                                </tr>
+                            </thead>
+                            <tbody id="statsTable">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                
+            `;
+
+      createCharts(data);
+      populateStatsTable(data.statistics);
+    }
+
+    function createCharts(data) {
+      // Gráfico de FPS
+      const fpsCtx = document.getElementById('fpsChart').getContext('2d');
+      new Chart(fpsCtx, {
+        type: 'line',
+        data: {
+          labels: data.chartData.timestamps.slice(0, 100), // Limita a 100 pontos
+          datasets: [{
+            label: 'FPS',
+            data: data.chartData.fps.slice(0, 100),
+            borderColor: '#3498db',
+            backgroundColor: 'rgba(52, 152, 219, 0.1)',
+            tension: 0.4
+          }, {
+            label: 'FPS 1% Low',
+            data: data.chartData.fps1Low.slice(0, 100),
+            borderColor: '#e74c3c',
+            backgroundColor: 'rgba(231, 76, 60, 0.1)',
+            tension: 0.4
+          }]
+        },
+        options: {
+          responsive: true,
+          scales: {
+            y: {
+              beginAtZero: true,
+              title: {
+                display: true,
+                text: 'FPS'
+              }
+            }
+          }
+        }
+      });
+
+      // Gráfico de Utilização
+      const usageCtx = document.getElementById('usageChart').getContext('2d');
+      new Chart(usageCtx, {
+        type: 'line',
+        data: {
+          labels: data.chartData.timestamps.slice(0, 100),
+          datasets: [{
+            label: 'CPU (%)',
+            data: data.chartData.cpuUsage.slice(0, 100),
+            borderColor: '#f39c12',
+            backgroundColor: 'rgba(243, 156, 18, 0.1)',
+            tension: 0.4
+          }, {
+            label: 'GPU1 (%)',
+            data: data.chartData.gpu1Usage.slice(0, 100),
+            borderColor: '#27ae60',
+            backgroundColor: 'rgba(39, 174, 96, 0.1)',
+            tension: 0.4
+          }, {
+            label: 'GPU2 (%)',
+            data: data.chartData.gpu2Usage.slice(0, 100),
+            borderColor: '#9b59b6',
+            backgroundColor: 'rgba(155, 89, 182, 0.1)',
+            tension: 0.4
+          }]
+        },
+        options: {
+          responsive: true,
+          scales: {
+            y: {
+              beginAtZero: true,
+              max: 100,
+              title: {
+                display: true,
+                text: 'Utilização (%)'
+              }
+            }
+          }
+        }
+      });
+    }
+
+    function populateStatsTable(statistics) {
+      const tbody = document.getElementById('statsTable');
+
+      // Métricas plotadas nos gráficos
+      const plottedMetrics = ['FPS', 'FPS 1(%) Low', 'CPU Utilization(%)', 'GPU1 Utilization(%)', 'GPU2 Utilization(%)'];
+
+      // Adiciona primeiro as métricas plotadas
+      plottedMetrics.forEach(metric => {
+        if (statistics[metric]) {
+          const stat = statistics[metric];
+          tbody.innerHTML += `
+            <tr>
+              <td><strong>${metric}</strong></td>
+              <td>${stat.min.toFixed(1)}</td>
+              <td>${stat.max.toFixed(1)}</td>
+              <td>${stat.media.toFixed(1)}</td>
+              <td>${stat.mediana.toFixed(1)}</td>
+            </tr>
+          `;
+        }
+      });
+
+      // Adiciona todas as outras métricas numéricas não plotadas
+      Object.keys(statistics).forEach(metric => {
+        if (!plottedMetrics.includes(metric) && statistics[metric]) {
+          const stat = statistics[metric];
+          tbody.innerHTML += `
+            <tr>
+              <td><strong>${metric}</strong></td>
+              <td>${stat.min.toFixed(1)}</td>
+              <td>${stat.max.toFixed(1)}</td>
+              <td>${stat.media.toFixed(1)}</td>
+              <td>${stat.mediana.toFixed(1)}</td>
+            </tr>
+          `;
+        }
+      });
+    }
+
+    // Funções de navegação
+    function showUploadSection() {
+      document.getElementById('uploadSection').style.display = 'block';
+      document.getElementById('instructionsSection').style.display = 'none';
+      document.getElementById('content').style.display = 'none';
+
+      // Atualizar botões
+      document.getElementById('uploadBtn').className = 'nav-button';
+      document.getElementById('instructionsBtn').className = 'nav-button secondary';
+    }
+
+    function showInstructionsSection() {
+      document.getElementById('uploadSection').style.display = 'none';
+      document.getElementById('instructionsSection').style.display = 'block';
+      document.getElementById('content').style.display = 'none';
+
+      // Atualizar botões
+      document.getElementById('uploadBtn').className = 'nav-button secondary';
+      document.getElementById('instructionsBtn').className = 'nav-button';
+    }
+
+    // Initialize upload functionality when page loads
+    window.addEventListener('load', () => {
+      setupUpload();
+      showUploadSection(); // Mostrar upload por padrão
+
+      document.getElementById("year").innerHTML = `© ${new Date().getFullYear()} - Dashboard de Performance`
+    });
+  </script>
+</body>
+
+</html>
